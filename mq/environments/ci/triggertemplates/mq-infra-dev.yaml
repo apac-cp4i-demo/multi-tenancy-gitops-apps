@@ -21,5 +21,7 @@ spec:
         value: $(tt.params.gitrepositoryurl)
       - name: git-revision
         value: $(tt.params.gitrevision)
+      - name: scan-image
+        value: 'true'
       pipelineRef:
         name: mq-infra-dev
