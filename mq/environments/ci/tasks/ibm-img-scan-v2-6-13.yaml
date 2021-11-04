@@ -27,6 +27,9 @@ spec:
       default: quay.io/ibmgaragecloud/aquasec-trivy
     - name: tools-image
       default: quay.io/ibmgaragecloud/ibmcloud-dev:v2.0.4
+    - name: img-scan-strict-mode
+      description: If img-scan-strict-mode is true and potential issue found, the step will be failed.
+      default: "false"
   volumes:
     - name: oci-image
       emptyDir: {}
@@ -82,19 +85,25 @@ spec:
       script: |
           set -ex
           PERFORM_SCAN="$(params.scan-trivy)"
+          SCAN_MODE="$(params.img-scan-strict-mode)"
           if [[ "${PERFORM_SCAN}" == "false" ]] || [[ -z "${PERFORM_SCAN}" ]]; then
             echo "User selected to skip scanning. Skipping Trivy scan."
             exit 0
           fi
           PATH_TO_IMAGE="/var/oci/image"
           echo -e "Trivy Security Scan image in registry"
+          set +e
           trivy image --exit-code 0 --input ${PATH_TO_IMAGE}
           trivy image --exit-code 1 --severity CRITICAL --input ${PATH_TO_IMAGE}
           my_exit_code=$?
           echo "Scan exit code :--- $my_exit_code"
           if [ ${my_exit_code} == 1 ]; then
               echo "Trivy scanning completed. CRITICAL Vulnerabilities found."
-              exit 1
+              if [ "${SCAN_MODE}" == "true" ]; then
+                exit 1
+              else
+                echo -e "\nWARNING: the step exits finally with above issue due to the img-scan-strict-mode is not true."
+              fi
           else
             echo "Trivy scanning completed. CRITICAL vulnerabilities not found."
           fi
@@ -119,6 +128,7 @@ spec:
           #!/usr/bin/env bash
           set -ex
           PERFORM_SCAN="$(params.scan-ibm)"
+          SCAN_MODE="$(params.img-scan-strict-mode)"
           if [[ "${PERFORM_SCAN}" == "false" ]] || [[ -z "${PERFORM_SCAN}" ]]; then
             echo "User selected to skip scanning. Skipping Vulnerability Advisor validation."
             exit 0
@@ -170,7 +180,11 @@ spec:
           elif [[ $(cat va-result.json | jq -r '.[].vulnerabilities | length') -gt 0 ]]; then
             echo "VA Failure: $(cat va-result.json | jq -r '.[].vulnerabilities | length') vulnerabilities found in the image"
             cat va-result.json | jq -r '.[].vulnerabilities'
-            exit 1
+            if [ "${SCAN_MODE}" == "true" ]; then
+              exit 1
+            else
+              echo -e "\nWARNING: the step exits finally with above issue due to the img-scan-strict-mode is not true."
+            fi
           elif [[ $(cat va-result.json | jq -r '.[].configuration_issues | length') -gt 0 ]]; then
             echo "VA Warning - $(cat va-result.json | jq -r '.[].configuration_issues | length') configuration issues found in the image"
             cat va-result.json | jq -r '.[].configuration_issues'

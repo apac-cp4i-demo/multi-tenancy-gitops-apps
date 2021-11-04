@@ -29,6 +29,12 @@ spec:
     - name: git-pr
       description: Enable the pipeline to do a PR for the gitops repo
       default: "false"
+    - name: detect-secrets-strict-mode
+      description: If detect-secrets-strict-mode is true and potential secrets detected, the step will be failed.
+      default: "false"
+    - name: img-scan-strict-mode
+      description: If img-scan-strict-mode is true and potential issue found, the step will be failed.
+      default: "false"
   tasks:
     - name: setup
       taskRef:
@@ -52,6 +58,8 @@ spec:
           value: "$(tasks.setup.results.git-revision)"
         - name: source-dir
           value: "$(tasks.setup.results.source-dir)"
+        - name: detect-secrets-strict-mode
+          value: $(params.detect-secrets-strict-mode)
     - name: build
       taskRef:
         name: ibm-build-tag-push-v2-6-13
@@ -140,6 +148,8 @@ spec:
           value: $(tasks.setup.results.scan-trivy)
         - name: scan-ibm
           value: $(tasks.setup.results.scan-ibm)
+        - name: img-scan-strict-mode
+          value: $(params.img-scan-strict-mode)
     - name: helm-release
       taskRef:
         name: ibm-helm-release-v2-6-13
