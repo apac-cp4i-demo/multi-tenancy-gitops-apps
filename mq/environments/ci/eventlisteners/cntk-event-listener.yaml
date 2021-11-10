@@ -12,7 +12,7 @@ spec:
       ref: cnkt-trigger-binding
     interceptors:
     - cel:
-        filter: header.match('X-GitHub-Event', 'push') && body.ref == 'refs/heads/qm1-hp-gitops-mq' && body.repository.full_name == 'apac-cp4i-demo/mq-infra'
+        filter: header.match('X-GitHub-Event', 'push') && body.ref == 'refs/heads/qm1-apac-cp4i-demo' && body.repository.full_name == 'apac-cp4i-demo/mq-infra'
     name: mq-infra-dev
     template:
       ref: mq-infra-dev
